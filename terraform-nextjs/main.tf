@@ -3,6 +3,18 @@ provider "aws" {
   
 }
 
+
+
+# Configure the AWS Provider
+# Write Terraform resource code to create desired AWS resources.                                                
+# Initialize the AWS provider to interact with AWS services.                                                        (Terraform Init)
+# Plan Terraform configurations to ensure they are syntactically correct and to see what actions will be taken.     (Terraform Plan)
+# Apply the Terraform configurations to create, update, or delete resources in your AWS environment.                (Terraform Apply)
+# Destroy the Terraform-managed infrastructure when it is no longer needed.                                         (Terraform Destroy)
+
+
+
+
 # S3 Bucket for Hosting Next.js Portfolio Website
 
 resource "aws_s3_bucket" "website" {
