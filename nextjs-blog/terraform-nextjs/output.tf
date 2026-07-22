@@ -1,5 +1,5 @@
-output "bucket_website_endpoint" {
-  value = aws_s3_bucket.website.website_endpoint
+output "bucket_regional_domain_name" {
+  value = aws_s3_bucket.website.bucket_regional_domain_name
 }
 
 output "cloudfront_url" {
