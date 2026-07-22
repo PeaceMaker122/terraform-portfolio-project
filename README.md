@@ -59,7 +59,7 @@ User → CloudFront Distribution → S3 Bucket (static site)
 | **S3** | Stores the static site files (all public access is blocked) |
 | **CloudFront** | CDN that enforces HTTPS and improves global load times |
 | **Origin Access Control (OAC)** | The modern AWS-recommended method for locking S3 access to CloudFront only. Replaces the legacy Origin Access Identity (OAI) approach |
-| **Remote Terraform State** | State file stored in a separate S3 bucket, with DynamoDB for state locking |
+| **Remote Terraform State** | State file stored in a separate S3 bucket, using S3 native state locking (`use_lockfile = true`) |
 
 ---
 
@@ -109,7 +109,7 @@ terraform-portfolio-project/
 - [Node.js](https://nodejs.org/) (see `.nvmrc` for version)
 - [Terraform](https://developer.hashicorp.com/terraform/install)
 - AWS CLI configured with appropriate credentials
-- An S3 bucket and DynamoDB table for Terraform remote state (created manually, see `state.tf`)
+- An S3 bucket for Terraform remote state (created manually, see `state.tf`)
 
 ---
 
@@ -235,20 +235,20 @@ output "cloudfront_url" {
 
 #### 2.2 Remote State
 
-State is stored remotely in S3 with DynamoDB locking. Create the S3 bucket and DynamoDB table manually before running Terraform. This ensures the state file is never accidentally destroyed with the rest of the infrastructure.
+State is stored remotely in S3 using S3 native state locking, available since Terraform 1.10 and GA from Terraform 1.11. This replaces the legacy DynamoDB locking approach, removing the need to provision a separate DynamoDB table. Create the S3 bucket manually before running Terraform. This ensures the state file is never accidentally destroyed with the rest of the infrastructure.
 
 ```hcl
 terraform {
   backend "s3" {
-    bucket         = "<your-state-bucket-name>"
-    key            = "global/s3/terraform.tfstate"
-    region         = "af-south-1"
-    dynamodb_table = "<your-dynamodb-table-name>"
+    bucket       = "<your-state-bucket-name>"
+    key          = "global/s3/terraform.tfstate"
+    region       = "af-south-1"
+    use_lockfile = true
   }
 }
 ```
 
-> Replace `<your-state-bucket-name>` and `<your-dynamodb-table-name>` with the names of the resources you created manually.
+> Replace `<your-state-bucket-name>` with the name of the S3 bucket you created manually.
 
 ---
 
@@ -288,7 +288,7 @@ cd nextjs-blog/terraform-nextjs
 terraform destroy
 ```
 
-> **Note:** The remote state S3 bucket and DynamoDB table are created manually and are not managed by Terraform, so they will not be affected by `terraform destroy`.
+> **Note:** The remote state S3 bucket is created manually and is not managed by Terraform, so it will not be affected by `terraform destroy`.
 
 ---
 
