@@ -56,9 +56,9 @@ User → CloudFront Distribution → S3 Bucket (static site)
 | Component | Role |
 |-----------|------|
 | **Next.js** | Static site generator (`output: 'export'`), produces HTML/CSS/JS ready for S3 |
-| **S3** | Stores and serves the static site files |
+| **S3** | Stores the static site files — all public access is blocked |
 | **CloudFront** | CDN that enforces HTTPS and improves global load times |
-| **Origin Access Identity (OAI)** | Restricts direct S3 access so all traffic routes through CloudFront |
+| **Origin Access Control (OAC)** | The modern AWS-recommended method for locking S3 access to CloudFront only. Replaces the legacy Origin Access Identity (OAI) approach |
 | **Remote Terraform State** | State file stored in a separate S3 bucket, with DynamoDB for state locking |
 
 ---
@@ -171,17 +171,25 @@ resource "aws_s3_bucket" "website" {
 }
 ```
 
+**Origin Access Control (OAC)** — restricts S3 bucket access to CloudFront only:
+
+```hcl
+resource "aws_cloudfront_origin_access_control" "website_oac" {
+  name                              = "OAC for Next.js Portfolio Website"
+  origin_access_control_origin_type = "s3"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
+}
+```
+
 **CloudFront Distribution** — serves the site globally over HTTPS:
 
 ```hcl
 resource "aws_cloudfront_distribution" "website_distribution" {
   origin {
-    domain_name = aws_s3_bucket.website.bucket_regional_domain_name
-    origin_id   = "S3-Website"
-
-    s3_origin_config {
-      origin_access_identity = aws_cloudfront_origin_access_identity.website_oai.cloudfront_access_identity_path
-    }
+    domain_name              = aws_s3_bucket.website.bucket_regional_domain_name
+    origin_id                = "S3-Website"
+    origin_access_control_id = aws_cloudfront_origin_access_control.website_oac.id
   }
 
   enabled             = true
@@ -190,9 +198,36 @@ resource "aws_cloudfront_distribution" "website_distribution" {
 }
 ```
 
+**S3 Bucket Policy** — grants read access to CloudFront only, via the OAC service principal:
+
+```hcl
+resource "aws_s3_bucket_policy" "website_policy" {
+  bucket = aws_s3_bucket.website.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "cloudfront.amazonaws.com" }
+      Action    = "s3:GetObject"
+      Resource  = "${aws_s3_bucket.website.arn}/*"
+      Condition = {
+        StringEquals = {
+          "AWS:SourceArn" = aws_cloudfront_distribution.website_distribution.arn
+        }
+      }
+    }]
+  })
+}
+```
+
 **Outputs** — printed after `terraform apply`:
 
 ```hcl
+output "bucket_website_endpoint" {
+  value = aws_s3_bucket.website.website_endpoint
+}
+
 output "cloudfront_url" {
   value = aws_cloudfront_distribution.website_distribution.domain_name
 }
@@ -205,13 +240,15 @@ State is stored remotely in S3 with DynamoDB locking. Create the S3 bucket and D
 ```hcl
 terraform {
   backend "s3" {
-    bucket         = "your-state-bucket-name"
+    bucket         = "<your-state-bucket-name>"
     key            = "global/s3/terraform.tfstate"
     region         = "af-south-1"
-    dynamodb_table = "your-lock-table-name"
+    dynamodb_table = "<your-dynamodb-table-name>"
   }
 }
 ```
+
+> Replace `<your-state-bucket-name>` and `<your-dynamodb-table-name>` with the names of the resources you created manually.
 
 ---
 
