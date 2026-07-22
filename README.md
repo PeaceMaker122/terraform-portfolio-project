@@ -24,7 +24,7 @@ A single-page portfolio website requiring robust, scalable cloud hosting with gl
 
 ### Our Role
 
-Full implementation of AWS cloud infrastructure using Terraform IaC — from provisioning the S3 bucket and CloudFront distribution to managing remote state with S3 and DynamoDB.
+Full implementation of AWS cloud infrastructure using Terraform IaC, covering everything from provisioning the S3 bucket and CloudFront distribution to managing remote state with S3 and DynamoDB.
 
 ---
 
@@ -56,7 +56,7 @@ User → CloudFront Distribution → S3 Bucket (static site)
 | Component | Role |
 |-----------|------|
 | **Next.js** | Static site generator (`output: 'export'`), produces HTML/CSS/JS ready for S3 |
-| **S3** | Stores the static site files — all public access is blocked |
+| **S3** | Stores the static site files (all public access is blocked) |
 | **CloudFront** | CDN that enforces HTTPS and improves global load times |
 | **Origin Access Control (OAC)** | The modern AWS-recommended method for locking S3 access to CloudFront only. Replaces the legacy Origin Access Identity (OAI) approach |
 | **Remote Terraform State** | State file stored in a separate S3 bucket, with DynamoDB for state locking |
@@ -109,7 +109,7 @@ terraform-portfolio-project/
 - [Node.js](https://nodejs.org/) (see `.nvmrc` for version)
 - [Terraform](https://developer.hashicorp.com/terraform/install)
 - AWS CLI configured with appropriate credentials
-- An S3 bucket and DynamoDB table for Terraform remote state (created manually — see `state.tf`)
+- An S3 bucket and DynamoDB table for Terraform remote state (created manually, see `state.tf`)
 
 ---
 
@@ -158,7 +158,7 @@ This generates the static output in the `out/` directory, ready to upload to S3.
 
 #### 2.1 Key Terraform Components
 
-**S3 Bucket** — hosts the static site files:
+**S3 Bucket**, which hosts the static site files:
 
 ```hcl
 resource "aws_s3_bucket" "website" {
@@ -171,7 +171,7 @@ resource "aws_s3_bucket" "website" {
 }
 ```
 
-**Origin Access Control (OAC)** — restricts S3 bucket access to CloudFront only:
+**Origin Access Control (OAC)**, which restricts S3 bucket access to CloudFront only:
 
 ```hcl
 resource "aws_cloudfront_origin_access_control" "website_oac" {
@@ -182,7 +182,7 @@ resource "aws_cloudfront_origin_access_control" "website_oac" {
 }
 ```
 
-**CloudFront Distribution** — serves the site globally over HTTPS:
+**CloudFront Distribution**, which serves the site globally over HTTPS:
 
 ```hcl
 resource "aws_cloudfront_distribution" "website_distribution" {
@@ -198,7 +198,7 @@ resource "aws_cloudfront_distribution" "website_distribution" {
 }
 ```
 
-**S3 Bucket Policy** — grants read access to CloudFront only, via the OAC service principal:
+**S3 Bucket Policy**, which grants read access to CloudFront only, via the OAC service principal:
 
 ```hcl
 resource "aws_s3_bucket_policy" "website_policy" {
@@ -221,7 +221,7 @@ resource "aws_s3_bucket_policy" "website_policy" {
 }
 ```
 
-**Outputs** — printed after `terraform apply`:
+**Outputs**, printed after `terraform apply`:
 
 ```hcl
 output "bucket_regional_domain_name" {
@@ -235,7 +235,7 @@ output "cloudfront_url" {
 
 #### 2.2 Remote State
 
-State is stored remotely in S3 with DynamoDB locking. Create the S3 bucket and DynamoDB table manually before running Terraform — this ensures the state file is never accidentally destroyed with the rest of the infrastructure.
+State is stored remotely in S3 with DynamoDB locking. Create the S3 bucket and DynamoDB table manually before running Terraform. This ensures the state file is never accidentally destroyed with the rest of the infrastructure.
 
 ```hcl
 terraform {
@@ -288,7 +288,7 @@ cd nextjs-blog/terraform-nextjs
 terraform destroy
 ```
 
-> **Note:** The remote state S3 bucket and DynamoDB table are created manually and are not managed by Terraform — they will not be affected by `terraform destroy`.
+> **Note:** The remote state S3 bucket and DynamoDB table are created manually and are not managed by Terraform, so they will not be affected by `terraform destroy`.
 
 ---
 
